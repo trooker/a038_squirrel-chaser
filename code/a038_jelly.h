@@ -15,8 +15,8 @@
 
 
 
-#define _SSID "sanjuan"
-#define _PWD "41Cisco123"
+#define _SSID "name_of_your_access_point"
+#define _PWD "password4accessing"
 
 
 #endif /* A038_JELLY_H_ */
