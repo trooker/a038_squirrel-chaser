@@ -5,7 +5,7 @@ The purpose of this vehicle is to encourage ground critters to migrating to a mo
 is controlled by a gamepad using joystick motion, a speed control, and buttons for commanding flashes, buzzers, LEDs, etc.  The user remotely controls the vehicle over WIFI via a gamepad-OTG-Android system component.  The vehicle itself receives its WIFI directions/instructions via 
 an on-board WIFI shield-Arduino Mega256.
 
-A full technical presentation of the project can be found at http://abbottanp.com.  From the Learn: section of the web page select "Knowledge Center".  That will provide a table of projects available as OpenSource of which a038_squirrel-chaser is near the top for 2020.
+A full technical presentation of the project can be found at http://abbottanp.com.  From the "Learn:" section of the web page select "Knowledge Center".  That will provide a table of projects available as OpenSource of which a038_squirrel-chaser is near the top for 2020.
 
 The squirrel-chaser design was compartmentized into a Android-WIFI-Arduino vehicle baranch and a gamepad-Arduino-OTG-Android branch.  Both branches have matured to the point were integration is the next step.  Both branches and the integration required the tools shown below.  
 
