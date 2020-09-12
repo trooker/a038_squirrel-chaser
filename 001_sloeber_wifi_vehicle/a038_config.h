@@ -39,9 +39,9 @@
 #include "WiFly.h"
 
 
-
-#define _SSID "sanjuan"
-#define _PWD "41Cisco123"
+//use a038_jelly.h to control these defines
+#define _SSID "your_wifi_acess_point"
+#define _PWD "passworrd to AP"
 
 
 #define DEV_SENSORZERO 1  //shuts-off machine zero for steppers
