@@ -20,6 +20,11 @@ package com.extensions.g038_otg_serial;
  * Salutes to Hariharan Mathavan work: https://www.allaboutcircuits.com/projects/communicate-with-your-arduino-through-android
  * and Hans Felhr for his effort in supporting the UsbSerial Library https://github.com/felHR85/UsbSerial/
  * 
+ * 200929_tr Readjust error message to 100_0 50_M
+ * 200927_tr Tweak the error message to 500_500_50_Z
+ * 200925_tr Minor typos correctins.  Corrected incoming messages reporting an error condition to 
+ *           use the same syntax used by the Android/a038_iii_gamepad_otg_wifi.aia to parse:
+ *           "otg_msg_err_Z".
  * 200902_tr Restored USBSerial jar version.  Verified by building aix.
  * 200901_tr Swapped physicaloid jar for usbserial jar in g038_997...java 
  *           Testing with 20200701 failed.  
@@ -96,7 +101,7 @@ import com.extensions.g038_otg_serial.utility.USB_Handler;
 
 @DesignerComponent(version = 1,
                     category = ComponentCategory.EXTENSION,
-                    description = "OTG-Serial component for connecting Orion Jpystick to  an ndroid",
+                    description = "OTG-Serial component for connecting Orion Joystick to  an Android",
                     nonVisible = true,
                     iconName = "images/extenstion.png",
                     androidMinSdk = 12)
@@ -282,8 +287,7 @@ public class  g038_otg_serial extends AndroidNonvisibleComponent implements Comp
                
                if ((deviceVID == 0x2341)       //Arduino Vendor ID|| (deviceVID == 1133)|| (deviceVID == 1133)
                    || (deviceVID == 0x1a86)    //200820 Qinheng PID 7523  CH340
-                   || (deviceVID == 1133)      //logitech decimal
-                   || (deviceVID == 0x046d))   //logitech hexadecimal
+                   || (deviceVID == 0x046d))   //logitech hexadecimal F310 in list for Direct mode only but does not work
                {                                                  //context was this prior
                    PendingIntent pi = PendingIntent.getBroadcast(context, 0, new Intent(ACTION_USB_PERMISSION), 0);
                    usbManager.requestPermission(device, pi);
@@ -392,7 +396,7 @@ public class  g038_otg_serial extends AndroidNonvisibleComponent implements Comp
    **/
    
 
-  @SimpleFunction(description = "Reads Axes byte package from serial.")
+  @SimpleFunction(description = "TBD: Reads Axes byte package from serial.")
   public String ReadAxesBytePackage() {
     String gamepadAxes = "OK";
     return gamepadAxes;
@@ -433,7 +437,7 @@ public class  g038_otg_serial extends AndroidNonvisibleComponent implements Comp
 
 
 
-@SimpleFunction(description = "Reads Gamepad Button byte package from serial.")
+@SimpleFunction(description = "TBD: Reads Gamepad Button byte package from serial.")
 public String ReadButtonBytePackage() 
 {
 	String gamepadButton = "Z";
@@ -476,8 +480,10 @@ public String ReadSerial()
   if (serialPort == null)
   {
     form.dispatchErrorOccurredEvent(g038_otg_serial.this, "ReadSerial", 3901);
-    //data = null;
-    incomingMsg = "oops: Message Receipt Error";
+    //data = null;  
+    //needs to be xxx_yyy_speed_A to stay with a038_iii_gamepad_otg_wifi.aia
+    //            parse to string;
+    incomingMsg = "100_0 50_M";   //Move slowly forwardoops: Message Receipt Error";
   } 
   return incomingMsg;  //  data;
 }
@@ -552,7 +558,7 @@ public void BaudRate(int baudRate)
   
   
   /**
-   * An event declaring that a data package has been from the OTG-Serial
+   * An event declaring that a data package has been read from the OTG-Serial
    * @param success
    * @param dataPackage: As a string
    */
@@ -563,7 +569,7 @@ public void BaudRate(int baudRate)
   }
 
   /**
-   * An event declaring that a Button press has been from the OTG-Serial
+   * An event declaring that a Button press has been read from the OTG-Serial
    * @param success
    * @param bytePackage
    */
@@ -573,7 +579,7 @@ public void BaudRate(int baudRate)
   }
 
  /**
-  * An event declaring that speed or joystick data has been from the OTG-Serial
+  * An event declaring that speed or joystick data has been read from the OTG-Serial
   * @param success
   * @param bytePackage
   */
