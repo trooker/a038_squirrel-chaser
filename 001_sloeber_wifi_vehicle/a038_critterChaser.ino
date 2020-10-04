@@ -1,12 +1,27 @@
 /* Copyright © 1988-2020 by Abbott Analytical Products. All Rights Reserved.
+ * 200925_tr Redo loop() with switch/case.  Preliminary test favorable.
+ * 200914_tr Rug test showed need for kill button.  Also seems to no longer go
+ *           in reverse direction.  The feedback seems to have latency that may
+ *           need to be addressed.  Observed that the accelerator pushed
+ *           balls to the wall is the best for recovery of active gamepad.
+ *           Love the LCD red/flash during active wifi looping.
+ * 200913_tr Make wifiloop() available and waiting for
+ *           10,000 with not activity.
+ * 200912_tr Revisited the buzzer soundings. Added clear Base Shield Port ID
+ *           for LED, btn, buzzer.  Sound ques
+ *           Happy Birthday:  Ready
+ *           Buzzer Cycle:  WIFI UDP setup complete> Take control or lose it.
+ *           ShaveNHaircut:  About to halt active WIFI UDP.
+ * 200907_tr Verified UDP functional and communicates with Android a038_rc_wifi app
  * 200604_tr Added wifi_mgr.ino for WiFi capability.
  * 200529_tr Initial constructions.  Borrowed heavily from a034_nc_chickadee.
  *
  */
 
-
 #include "a038_config.h"
 #include "a038_jelly.h"
+
+
 
 //------------------------------------------------------------------------------
 // GLOBALS
@@ -35,7 +50,8 @@ bool comment = false;
 
 
 //170701_tr
-rgb_lcd lcd;
+//200914
+//rgb_lcd lcd;
 
 int cnt = 0;
 const int LED    = 2;       // the Grove port No. you attached an LED to
@@ -49,28 +65,32 @@ long previousMillis = 0;        // will store last time LED was updated
 // will quickly become a bigger number than can be stored in an int.
 long interval = 1000;           // interval at which to blink (milliseconds)
 int doneFlag = -1;              // think tristate
+                                //start
+                                //USB setup
 int kntr = 0;                   // loop counter
 int loopknt = 0;         // count loop cycles
 bool loopdebug = true;  //false;   // controls serial printing of debug info:  true is doit
 int workknt = 0;         // count cycle through work
-int wait4loop = 4;  //10000;
+int wait4loop = 1000; //100;//10000; //4;  //10000;
 int endOn = wait4loop;         // 200;         // end work loop after
 int closeLoopOn = wait4loop;   // end arduino looping after 200 cycles
+bool shutdownWifi = false;
+
 // Define the delay for the "breathing" effect; change this
 // to a smaller value for a faster effect, larger for slower.
 const int BREATH_DELAY = 5; // milliseconds
 
 
 
-int buzz1Knt = 1;        // Switch for happybirthday
-int buzz2Knt = 1;        // Switch for shave & haircut
-int buzz3Knt = 1;        // Switch for short siren
-int buzz4Knt = 1;        // Switch for long siren
-int buzzOff  = 2;        // Cycle play until heard x times
+int buzz1Knt = 0;        // Switch for happybirthday
+int buzz2Knt = 0;        // Switch for shave & haircut
+int buzz3Knt = 0;        // Switch for short siren
+int buzz4Knt = 0;        // Switch for long siren
+int buzzOff  = 1;        // Cycle play until heard x times - 1
 
-const int sigId_led    = 2;     //Port 3 LED   OUTPUT
-const int sigId_btn    = 6;     //Port 7 btn   INPUT
-const int sigId_buz    = 5;     //Port 6 buzzer OUTPUT
+const int sigId_led    = 3;     //Base Shield Port 3 LED   OUTPUT
+const int sigId_btn    = 6;     //Base Shield Port 6 btn   INPUT
+const int sigId_buz    = 5;     //Base Shiled Port 5 buzzer OUTPUT
 
 
 /*
@@ -268,34 +288,41 @@ void breatherLED()
 
 bool checkBtn()
 {
+	bool statFlg = false;
  if (digitalRead(sigId_btn)==HIGH)
   {
-     lcd.setCursor(0, 0);
-     readString = "Button Pressed";
+	 loopknt = closeLoopOn+1; //kill switch mode of operation
+     showDisplay0_0();
+	 readString = "Kill Switch Pressed";
      showDisplayDebug(readString);
-     lcd.setCursor(0, 1);
-     readString = "Buzz On LED Off";
+     Serial.println(readString);
+     showDisplay0_1();
+     readString = "Kill Switch";
      showDisplayDebug(readString);
-     digitalWrite((sigId_btn+0),HIGH);
+     digitalWrite((sigId_btn+0),LOW);
      digitalWrite((sigId_led+0),LOW);
- soundBuzz3(); //siren
-     return true;
+Serial.println("soundBuzz3");
+//     soundBuzz3(); //siren
+     statFlg = true;
   } //ifpressed
   else
   {
+//	  Serial.println(loopknt);
 	  digitalWrite((sigId_btn+0),LOW);
-	  digitalWrite((sigId_led+0),HIGH);
+      if (shutdownWifi)
+    	  digitalWrite((sigId_led+0),LOW);
+      else {digitalWrite((sigId_led+0),HIGH);}
 	  digitalWrite((sigId_buz+0),LOW);
-	  return false;
-
+	  statFlg = false;
   }
+  return statFlg;
 }
 
 
 
 void setupCommo()
 {
-	  doneFlag = 0;
+//not used	  doneFlag = 0;
 //	  ready_file4reading();
 	  ready_USBinputs(); // ready to pass USB Serial traffic  to loop()
 	  show2Reset();
@@ -311,16 +338,52 @@ void dowork()
    setupCommo();
    //un-needed siren sound
    foutput("buzz4Knt..: ", buzz4Knt);
-   if ((buzz4Knt < buzzOff) && ( !noSound))
+   while ((buzz4Knt < buzzOff) && ( !noSound))
    {
 	   soundBuzz4(); //siren
+	   digitalWrite((sigId_buz+0),LOW);
 	   buzz4Knt++;
+//	   Serial.print(buzz4Knt);
+//	   Serial.println("  : Buzz4Knt");
    }
+   digitalWrite((sigId_buz+0),LOW);
+   buzz4Knt = 0;
+
 }
+
+void shutter()
+ {
+            showMills();
+    // keep LCD active or kill it
+            calmShowDisplay();
+    	    allstop();
+    	    delay(1000);
+            disable_dcm();  //shutdown dc motors
+       	    close_udp();    //turn-off wifi-TCP
+            Serial.print(loopknt);
+//           Serial.println("  :loopknt at shutdown");
+//           Serial.print(doneFlag);
+//           Serial.println("  :doneFlag");
+            Serial.println("Critter Chaser has been disabled. ");
+      	    digitalWrite((sigId_led+0),LOW);
+            shutdownWifi = true;
+ }
+
+
+int stateFlg = 0; //0: throw first message
+int const XCARE = -1;
+
+int const STARTER = 0;
+int const PRIMER  = 1;
+int const GOODBYE = 5;
+int const KILLIT  = 7;
+int const DEAD    = 9;
+int const IDLING = 9999;
 
 
 void setup()
 {
+      stateFlg = XCARE;
 	  Serial.begin(BAUD);  // open coms
 	  Serial.println("Serial is running");
       wifisetup();
@@ -329,18 +392,17 @@ void setup()
 	  pinMode((sigId_btn+0),INPUT);    //btn
 	  pinMode((sigId_buz+0),OUTPUT);   //buzzer
 	  allstop();
-
 	  setup_controller();  //ams1
 //Skip for now not using steppers
 //	  set_position(0,0,0,0,0);  // set staring position
 	 //init_steppers does this feedrate((MAX_FEEDRATE + MIN_FEEDRATE)/2);  // set default speed
 
-// 	  init_parse_cmdln(); //process string
+//not used 	  init_parse_cmdln(); //process string
 	  init_steppers();   //ams1 Steppers and DC Motors
-//	  setup_sd();
+//not used	  setup_sd();
       setupCommo();
       showSetup();  //fires LCD message
-
+      stateFlg = STARTER;
 
 }
 
@@ -349,49 +411,110 @@ void setup()
 void loop()
 {
 // works from here
-	wifiloop();
-
-
-	if (buzz1Knt < buzzOff) //play tune once
-	{
-		soundBuzz1(); //happy birthday
-	    buzz1Knt++;
-	}
-	if ((loopknt < 1) && (doneFlag <= 2))
-	{
-	  Serial.print("");
-	  Serial.println("go to dowork");
-	  dowork();
-	 // dead stick here wifiloop();
-
-	}
-	else
-	{
-		if (doneFlag < 3)
-		{
-	    //foutput("loop loopknt..: ", loopknt);
-	    //foutput("loop doneFlag..: ", doneFlag);
-		}
-	    if ((loopknt >= closeLoopOn)|| (doneFlag >= 2))
-	    {
-	        disable();
-	        showMills();
-// keep LCD active or kill it
-	        showDone();
-		    allstop();
-	        if (buzz2Knt < buzzOff)
-	        {
-	    	   soundBuzz2(); //shave haircut
-	    	   buzz2Knt++;
-	         }
-	    }
-
-    }
-    if (loopknt < closeLoopOn+1)
+//	wifiloop();
+    if (checkBtn())
+    	{stateFlg = KILLIT;}
+//    if ((stateFlg != KILLIT) && (stateFlg != DEAD))
+//    {
+//    	Serial.print(stateFlg);
+//        Serial.println(" Entering switch loop");
+//    }
+    switch (stateFlg)
     {
-       loopknt++;
-       doneFlag++;
-    }
+    case IDLING:
+        loopknt++;
+        flipShowDisplay2Red();
+	    calmShowDisplay();
+        wifiloop();
+        if ((checkForUDPactivity())&& (!Need2Killwifi()))
+        {
+    	  loopknt = 2; //need to skip past dowork() and buzzer
+    	  reset_is_UDP_active();
+        }
+//        Serial.print(loopknt);
+//        Serial.println("  :loopknt wifiloop cycle finished");
+        Serial.println(".");
+	    if (loopknt >= closeLoopOn+1)
+	    	{stateFlg = GOODBYE;}
+        break;
+    case STARTER:
+	   // if (buzz1Knt < buzzOff) //play tune once
+	    {
+		  soundBuzz1(); //happy birthday
+	      buzz1Knt++;
+	    }
+	    disable();  //not used steppers
+		Serial.println("\ngo to dowork");
+		dowork();  //sound buzzer4
+		loopknt++;
+		stateFlg = IDLING;
+        break;
+
+    case GOODBYE:
+	    soundBuzz2(); //shave haircut
+	    buzz2Knt++;
+        if (!shutdownWifi)
+        {shutter();}
+        stateFlg = DEAD;
+        break;
+    case DEAD:
+    case KILLIT:
+	    break;
+    case XCARE:
+	    break;
+    default:
+    	Serial.println("default");
+    	break;
+    } // end of switch
 
 
+//	if (buzz1Knt < buzzOff) //play tune once
+//	{
+//		soundBuzz1(); //happy birthday
+//	    buzz1Knt++;
+//	}
+//	if ((loopknt < 1) ) // not used&& (doneFlag <= 2))
+//	{
+//	  Serial.print("");
+//	  Serial.println("go to dowork");
+//	  dowork();  //sound buzzer4
+//	}
+//	else
+//	{
+//	    if ((loopknt >= closeLoopOn)|| (doneFlag >= 2))
+//	    {
+//	    	disable();  //not used steppers
+//	    }
+//    }
+//    if (loopknt < closeLoopOn+1)
+//    {
+        //not used doneFlag++;
+//    	loopknt++;
+ //       flipShowDisplay2Red();
+ //   	calmShowDisplay();
+
+//	    wifiloop();
+//	    if ((checkForUDPactivity())&& (!Need2Killwifi()))
+//	    {
+//	    	loopknt = 2; //need to skip past dowork() and buzzer
+//	    	reset_is_UDP_active();
+//	    }
+//       Serial.print(loopknt);
+ //       Serial.println("  :loopknt wifiloop cycle finished");
+
+//    }
+//    else
+//    {
+
+//        if (buzz2Knt < buzzOff)
+//        {
+//    	    soundBuzz2(); //shave haircut
+//    	    buzz2Knt++;
+//        }
+//        if (!shutdownWifi)
+//        {
+//        	shutter();
+//       }
+
+ //   }
 }

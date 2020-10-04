@@ -14,7 +14,7 @@
  */
 
 //int speakerPin = 5;    //was originally 3  See aapBase.h
-int stopper    = 1; //3;
+int stopper    = 3; //3;
 int buzzknt    = 0;
 
 aapHappyBirthDay   myHappyBirthdaySong;
@@ -33,7 +33,7 @@ void setupBuzzer()
 
 void soundBuzz1()
 {
-	while (buzzknt < stopper)
+	while (buzzknt < stopper-2)
 	{
 	  myHappyBirthdaySong.play();
 	  buzzknt++;
@@ -43,7 +43,7 @@ void soundBuzz1()
 
 void soundBuzz2()
 {
-	while (buzzknt < stopper)
+	while (buzzknt < stopper-2)
 	{
 	  myShave_Haircut.play();
 	  buzzknt++;
@@ -53,7 +53,7 @@ void soundBuzz2()
 
 void soundBuzz3()
 {
-	while (buzzknt < stopper)
+	while (buzzknt < stopper -1 )
 	{
 	  mySiren.play();
 	  buzzknt++;
@@ -64,11 +64,11 @@ void soundBuzz3()
 
 void soundBuzz4()
 {
-	while (buzzknt < stopper)
+	while (buzzknt < stopper-1)
 	{
 	  mySiren.play1();
 	  buzzknt++;
    }
-	buzzknt = 0;
+ 	buzzknt = 0;
 }
 

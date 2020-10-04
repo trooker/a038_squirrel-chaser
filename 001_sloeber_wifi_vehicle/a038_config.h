@@ -5,6 +5,8 @@
 /*Copyright © 1988-2020 by Abbott Analytical Products. All Rights Reserved.
  * a038_critterChaser project
  * Header file used to centralize libraries used by project
+ * 200914_tr Sloeber does not like rgb_lcd and has corruped showDisplay,
+ * 200912_tr Added ams2 functions to external void functions list.
  * 200604_tr Added wifi_mgr.ino methods and defines.
  * 200529_tr Tinkering with SEEED WiFi shield
  *        https://wiki.seeedstudio.com/Wifi_Shield_V2.0/#example-1-send-commands-to-wifi
@@ -34,15 +36,14 @@
 //#include <AccelStepper.h>
 #include <SPI.h>
 #include <SD.h>
-#include "rgb_lcd.h"
+//#include "rgb_lcd.h"
+#include <rgb_lcd.h>
+
 #include <SoftwareSerial.h>
 #include "WiFly.h"
 
-
-//use a038_jelly.h to control these defines
-//#define _SSID "your_wifi_acess_point"
-//#define _PWD "passworrd to AP"
-
+//200914 plays better here
+rgb_lcd lcd;
 
 #define DEV_SENSORZERO 1  //shuts-off machine zero for steppers
 
@@ -333,6 +334,7 @@ int sderrFlg = -1;  // -1: XCare 0: okay  1: Err state
 //------------------------------------------------------------------------------
 // METHODS
 //------------------------------------------------------------------------------
+//ams1
 extern void m1step(int dir);
 extern void m2step(int dir);
 extern void m3step(int dir);
@@ -340,6 +342,12 @@ extern void disable();
 extern void setup_controller();
 extern void run_steppers();
 extern void init_steppers(); //ams1
+
+
+//ams2
+extern void setSpeedjs(int inSpeed);
+extern void setDirection(int rawx, int rawy);
+extern void disable_dcm();
 
 
 extern void parse_cmdln();
@@ -350,6 +358,10 @@ extern void init_process_string(); //process_string
 //------------------------------------------------------------------------------
 extern void wifisetup();
 extern void wifiloop();
+extern void close_udp();
+extern bool checkForUDPactivity();
+extern void reset_is_UDP_active();
+extern bool Need2Killwifi();
 
 
 /**

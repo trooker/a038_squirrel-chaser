@@ -1,6 +1,9 @@
 /* Copyright © 1988-2020 by Abbott Analytical Products. All Rights Reserved.
+ * 200914_tr Large sections of this file refer to steppers.  Delete reference with
+ *           extreme prejudice.
  * 200529_tr Adapted from a34_nc_chickadee ams1.ino
-  *
+ *
+ *
  */
 //------------------------------------------------------------------------------
 // 2 Axis CNC Demo
@@ -139,7 +142,6 @@ void disable()
    // m3->release();
   //  m4->release();
    // m5->release();
-
 }
 
 void zeroLoc()
