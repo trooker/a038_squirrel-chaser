@@ -20,7 +20,10 @@ package com.extensions.g038_otg_serial;
  * Salutes to Hariharan Mathavan work: https://www.allaboutcircuits.com/projects/communicate-with-your-arduino-through-android
  * and Hans Felhr for his effort in supporting the UsbSerial Library https://github.com/felHR85/UsbSerial/
  * 
- * 200929_tr Readjust error message to 100_0 50_M
+ * 201007_tr Correct error message 100_0_50_M and modify second instance to 100_0 51_M as "51" 
+ *           indicates second throwing of error.
+ *           Modified public int BaudRate() to return baudRate
+ * 200929_tr Readjust error message to 100_0 50_M  ,,=== Bad eyes
  * 200927_tr Tweak the error message to 500_500_50_Z
  * 200925_tr Minor typos correctins.  Corrected incoming messages reporting an error condition to 
  *           use the same syntax used by the Android/a038_iii_gamepad_otg_wifi.aia to parse:
@@ -483,7 +486,7 @@ public String ReadSerial()
     //data = null;  
     //needs to be xxx_yyy_speed_A to stay with a038_iii_gamepad_otg_wifi.aia
     //            parse to string;
-    incomingMsg = "100_0 50_M";   //Move slowly forwardoops: Message Receipt Error";
+    incomingMsg = "100_0_50_M";   //Move slowly forwardoops: Message Receipt Error";
   } 
   return incomingMsg;  //  data;
 }
@@ -516,7 +519,7 @@ public boolean IsInitialized() {
  */
 @SimpleProperty(category = PropertyCategory.BEHAVIOR, description = "Returns the current baud rate")
 public int BaudRate() {
-  return 123; //200824 this.baudRate;
+  return baudRate;   //201007   123; //200824 this.baudRate;
 }
 
 
