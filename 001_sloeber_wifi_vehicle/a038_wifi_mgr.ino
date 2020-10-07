@@ -2,6 +2,7 @@
  * Connects to WiFi and reads/writes UDP messages.  The "read"
  * is parsed into a direction or an action. This sketch was developed
  * from s008.
+ * 201007_tr Handles vehiclePedal for the Compass mode.
  * 200925_tr Discovered that 0_0_0_@ needed to be handled separately.
  * 200912_tr Taking look at parse gamepad data
  * 200911_tr a038_981_gamepad_otg_wifi.apk pairs best with this.
@@ -164,6 +165,7 @@ void sortAndroid()
 		if (packetBuffer[packetNdx] == '\0')
 		{
 			//showDisplay(packetBuffer);
+		 setSpeed4Motor(getVehiclePedal(),9);
 	    if((strcmp(packetBuffer, "forward") == 0) ||
 	    		(strcmp(packetBuffer, "2") == 0))
 	    {

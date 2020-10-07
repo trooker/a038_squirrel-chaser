@@ -5,6 +5,7 @@
 /*Copyright © 1988-2020 by Abbott Analytical Products. All Rights Reserved.
  * a038_critterChaser project
  * Header file used to centralize libraries used by project
+ * 201006_tr Added XCARE for tristate behavior
  * 200914_tr Sloeber does not like rgb_lcd and has corruped showDisplay,
  * 200912_tr Added ams2 functions to external void functions list.
  * 200604_tr Added wifi_mgr.ino methods and defines.
@@ -293,6 +294,9 @@ int milli_delay;
 //For dev 170331
 #define FORWARD 1
 #define BACKWARD 2
+//201006
+//201006
+#define XCARE -1
 
 
 #define MICROSTEP 4
@@ -345,9 +349,10 @@ extern void init_steppers(); //ams1
 
 
 //ams2
-extern void setSpeedjs(int inSpeed);
+//extern void setSpeedjs(int inSpeed);
 extern void setDirection(int rawx, int rawy);
 extern void disable_dcm();
+extern int getVehiclePedal();
 
 
 extern void parse_cmdln();

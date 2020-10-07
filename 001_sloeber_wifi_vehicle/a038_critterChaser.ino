@@ -1,4 +1,5 @@
 /* Copyright © 1988-2020 by Abbott Analytical Products. All Rights Reserved.
+ * 201007_tr Minor housekeeping of comments.  LCD is is thrown as error but compiles.
  * 200925_tr Redo loop() with switch/case.  Preliminary test favorable.
  * 200914_tr Rug test showed need for kill button.  Also seems to no longer go
  *           in reverse direction.  The feedback seems to have latency that may
@@ -371,7 +372,7 @@ void shutter()
 
 
 int stateFlg = 0; //0: throw first message
-int const XCARE = -1;
+//see a038_config.h int const XCARE = -1;
 
 int const STARTER = 0;
 int const PRIMER  = 1;
@@ -467,54 +468,4 @@ void loop()
     	break;
     } // end of switch
 
-
-//	if (buzz1Knt < buzzOff) //play tune once
-//	{
-//		soundBuzz1(); //happy birthday
-//	    buzz1Knt++;
-//	}
-//	if ((loopknt < 1) ) // not used&& (doneFlag <= 2))
-//	{
-//	  Serial.print("");
-//	  Serial.println("go to dowork");
-//	  dowork();  //sound buzzer4
-//	}
-//	else
-//	{
-//	    if ((loopknt >= closeLoopOn)|| (doneFlag >= 2))
-//	    {
-//	    	disable();  //not used steppers
-//	    }
-//    }
-//    if (loopknt < closeLoopOn+1)
-//    {
-        //not used doneFlag++;
-//    	loopknt++;
- //       flipShowDisplay2Red();
- //   	calmShowDisplay();
-
-//	    wifiloop();
-//	    if ((checkForUDPactivity())&& (!Need2Killwifi()))
-//	    {
-//	    	loopknt = 2; //need to skip past dowork() and buzzer
-//	    	reset_is_UDP_active();
-//	    }
-//       Serial.print(loopknt);
- //       Serial.println("  :loopknt wifiloop cycle finished");
-
-//    }
-//    else
-//    {
-
-//        if (buzz2Knt < buzzOff)
-//        {
-//    	    soundBuzz2(); //shave haircut
-//    	    buzz2Knt++;
-//        }
-//        if (!shutdownWifi)
-//        {
-//        	shutter();
-//       }
-
- //   }
 }

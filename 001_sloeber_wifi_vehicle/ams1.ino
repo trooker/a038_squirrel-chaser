@@ -167,7 +167,7 @@ void setup_controller()
      m1->setSpeed(ams_SPEED);
  //    m4->setSpeed(ams_SPEED-200);
   //   m5->setSpeed(ams_SPEED-200);
-    setup_dcm();
+    setup_dcm();  //ams2.ino
 
 
     Serial.println("Setup_controller Fina");

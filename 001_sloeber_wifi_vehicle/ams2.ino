@@ -1,4 +1,8 @@
 /* Copyright © 1988-2020 by Abbott Analytical Products. All Rights Reserved.
+ * 201007_tr Added getvehiclepedal() and set ams2_SPEED to 125;
+ *           altered setup_dcm() to use vehiclePedal
+ * 201006_tr Incorporate roadtest observations on turning speed and settling.
+ *           See adafruit DCMotor example and pieslice segments.
  * 200928_tr Revisit based upon road-testing.  Use the incremental pie sections to reduce
  *           delay and improve divergent behavior:  -x/-y read as positive quad,
  * 200926_tr Special case setSpeed when input speed is 0.
@@ -15,7 +19,7 @@
 #include "a038_config.h"
 
 
-int ams2_SPEED = 50;  //swag at starting spped of both motors
+int ams2_SPEED = 125;  //swag at starting spped of both motors
 int leftdcm1_SPEED = ams2_SPEED;
 int rightdcm2_SPEED = ams2_SPEED;
 int dcHold = 400;  // delay in halting
@@ -23,6 +27,7 @@ int dcHold = 400;  // delay in halting
                    // 1000 ok
                    // 500, 400 good
                    // 250, 300, 350 marginal
+int dcShort = 10;   // Derived from Adafruit example for DCMotors
 int vehiclePedal = ams2_SPEED;
 const int deadZone = 10;
 const int deadMin  = -deadZone;
@@ -37,7 +42,11 @@ const int RangeMax = 500;   // -/+
 //Forward MeDCMotor
 const int MotorSpeedMax = 255;     // 0 .. 255
 
+int azimuthsegment = 0;  // 1..24 segments assigned
 
+int directionFlag = XCARE;   // constrain(dirFlg, XCARE, BACKWARD);
+                             //-1: XCARE,   0: Not used,
+                             // 1: FORWARD, 2: BACKWARD
 int soundAMS2Knt = 0;
 const int soundAMS2Stopper = 3;
 int buzzKnt4ams2 = 0;        // Switch for shave & haircut
@@ -58,6 +67,7 @@ if ((buzzKnt4ams2 < buzzOff4ams2) && (soundAMS2Knt < soundAMS2Stopper))
 void chaseForward()
 {
 	Serial.println("chase_Forward()");
+	directionFlag = FORWARD;
 	rightdcm2->run(FORWARD);
 	leftdcm1->run(FORWARD);
     delay(dcHold);
@@ -66,6 +76,8 @@ void chaseForward()
 void chaseBackward()
 {
 	Serial.println("chase_Backward()");
+	directionFlag = BACKWARD;
+
 	leftdcm1->run(BACKWARD);
 	rightdcm2->run(BACKWARD);
     delay(dcHold);
@@ -96,6 +108,8 @@ void chaseDCM2() //90 degrees left
 void chaseStop()
 {
    Serial.println("chase_Stop()");
+  directionFlag = XCARE;
+
    leftdcm1->run(RELEASE);
    rightdcm2->run(RELEASE);
 }
@@ -110,7 +124,7 @@ void chase_LeftDCM_Forward()
 	Serial.println("chase_LeftDCM_Forward()");
 	leftdcm1->run(FORWARD);  //Slowdown
 	rightdcm2->run(FORWARD);
-    delay(dcHold);
+    //delay(dcHold);
 
 }
 
@@ -119,7 +133,7 @@ void chase_RightDCM_Forward()
 	Serial.println("chase_RightDCM_Forward()");
 	leftdcm1->run(FORWARD);
 	rightdcm2->run(FORWARD);   //Slowdown
-    delay(dcHold);
+    //delay(dcHold);
 
 }
 
@@ -129,7 +143,7 @@ void chase_LeftDCM_Backward()
 	Serial.println("chase_LeftDCM_Backward()");
 	leftdcm1->run(BACKWARD);
 	rightdcm2->run(BACKWARD);    //Slowdown
-    delay(dcHold);
+    //delay(dcHold);
 
 }
 
@@ -138,7 +152,7 @@ void chase_RightDCM_Backward()
 	Serial.println("chase_RightDCM_Backward()");
 	leftdcm1->run(BACKWARD);    //Slowdown
 	rightdcm2->run(BACKWARD);
-    delay(dcHold);
+    //delay(dcHold);
 
 }
 
@@ -210,6 +224,62 @@ double vector_analysis(int xx, int yy)
 	return azimuth = angle;
 }
 
+void chaseLeft_Forward_Backward()
+{
+    switch(directionFlag)
+    {
+        case FORWARD:
+        	chase_LeftDCM_Forward();
+        	break;
+        case BACKWARD:
+        	chase_LeftDCM_Backward();
+        	break;
+        case XCARE:
+        	setSpeed4Motor(0 ,9);
+        	chaseStop();
+        	    break;
+    }
+
+}
+
+
+
+void chaseRight_Forward_Backward()
+{
+    switch(directionFlag)
+    {
+        case FORWARD:
+        	chase_RightDCM_Forward();
+        	break;
+        case BACKWARD:
+        	chase_RightDCM_Backward();
+        	break;
+        case XCARE:
+        	setSpeed4Motor(0 ,9);
+        	chaseStop();
+        	    break;
+    }
+
+}
+
+
+void setInsideTurn(int motor, int segpass)
+		{
+			int indx = 0;
+			int indxMax = 4;
+		    int mph = 0;
+
+		  for (indx=0; indx<indxMax * segpass; indx++) {
+			    mph = (indx/indxMax) * vehiclePedal;
+				setSpeed4Motor(mph,2);
+    		    delay(dcShort);
+		  }
+		  for (indx=indxMax * segpass; indx!=0; indx--) {
+			    mph = (indx/(indxMax*segpass)) * vehiclePedal ;
+				setSpeed4Motor(mph,2);
+		    delay(dcShort);
+		  }
+		}
 
 
 
@@ -241,7 +311,7 @@ void setDirection(int rawx, int rawy)
 	Serial.print(rawx);
 	Serial.println(" :rawx value");
 	azimuth = vector_analysis(rawx,rawy);
-	int azimuthsegment = map(long(azimuth), -179, 180, 1,24  );
+	azimuthsegment = map(long(azimuth), -179, 180, 1,24  );
 
 //Serial.print(azimuth);
 //Serial.println(" :azimuth for Chaser");
@@ -267,144 +337,152 @@ Serial.println(" :direction segment for Chaser");
     	chaseDCM2();
     	break;
     case 13:  //left forward
-		//slow L portionally
-		L = .2 * R;
-		setSpeed4Motor(R,1);
-		setSpeed4Motor(L,2);
 		chase_LeftDCM_Forward();
+		setSpeed4Motor(R,1);
+		setInsideTurn(2,1);
     	break;
     case 14:
-		L = .4 * R;
-		setSpeed4Motor(R,1);
-		setSpeed4Motor(L,2);
 		chase_LeftDCM_Forward();
+		setSpeed4Motor(R,1);
+		setInsideTurn(2,2);
     	break;
     case 15:
-		L = .6 * R;
-		setSpeed4Motor(R,1);
-		setSpeed4Motor(L,2);
 		chase_LeftDCM_Forward();
-    	break;
+		setSpeed4Motor(R,1);
+		setInsideTurn(2,3);
     	break;
     case 16:
-		L = .4 * R;
-		setSpeed4Motor(R,1);
-		setSpeed4Motor(L,2);
 		chase_LeftDCM_Forward();
-    	break;
+		setSpeed4Motor(R,1);
+		setInsideTurn(2,4);
     	break;
     case 17:
-		L = .2 * R;
-		setSpeed4Motor(R,1);
-		setSpeed4Motor(L,2);
 		chase_LeftDCM_Forward();
-
-    	break;
-
-    case 7:     //right forward
-		//slow R portionally
-		R = .2 * L;
 		setSpeed4Motor(R,1);
-		setSpeed4Motor(L,2);
-		chase_RightDCM_Forward();
+		setInsideTurn(2,5);
     	break;
-    case 8:
-		R = .4 * L;
-		setSpeed4Motor(R,1);
-		setSpeed4Motor(L,2);
-		chase_RightDCM_Forward();
-    	break;
-    case 9:
-		R = .6 * L;
-		setSpeed4Motor(R,1);
-		setSpeed4Motor(L,2);
-		chase_RightDCM_Forward();
-    	break;
-    case 10:
-		R = .4 * L;
-		setSpeed4Motor(R,1);
-		setSpeed4Motor(L,2);
-		chase_RightDCM_Forward();
-    	break;
-    case 11:
-		R = .2 * L;
-		setSpeed4Motor(R,1);
-		setSpeed4Motor(L,2);
-		chase_RightDCM_Forward();
-    	break;
-
-
-    case 2:  //right backward
-		//slow R portionally
-		R = .2 * L;
-		setSpeed4Motor(R,1);
-		setSpeed4Motor(L,2);
-		chase_RightDCM_Backward();
-    	break;
-    case 3:
-		R = .4 * L;
-		setSpeed4Motor(R,1);
-		setSpeed4Motor(L,2);
-		chase_RightDCM_Backward();
-    	break;
-    case 4:
-		R = .4 * L;
-		setSpeed4Motor(R,1);
-		setSpeed4Motor(L,2);
-		chase_RightDCM_Backward();
-    	break;
-    case 5:
-		R = .2 * L;
-		setSpeed4Motor(R,1);
-		setSpeed4Motor(L,2);
-		chase_RightDCM_Backward();
-    	break;
-
-
-
+//**********
     case 19:  //left backward
-		//slow L portionally
-		L = .2 * R;
+//		chase_LeftDCM_Backward();
+		chase_LeftDCM_Forward();
 		setSpeed4Motor(R,1);
-		setSpeed4Motor(L,2);
-		chase_LeftDCM_Backward();
+		setInsideTurn(2,7);
     	break;
     case 20:
-		L = .4 * R;
+//		chase_LeftDCM_Backward();
+		chase_LeftDCM_Forward();
 		setSpeed4Motor(R,1);
-		setSpeed4Motor(L,2);
-		chase_LeftDCM_Backward();
+		setInsideTurn(2,8);
+
    	break;
     case 21:
-		L = .6 * R;
+//		chase_LeftDCM_Backward();
+		chase_LeftDCM_Forward();
 		setSpeed4Motor(R,1);
-		setSpeed4Motor(L,2);
-		chase_LeftDCM_Backward();
+		setInsideTurn(2,9);
     	break;
     case 22:
-		L = .6 * R;
+//		chase_LeftDCM_Backward();
+		chase_LeftDCM_Forward();
 		setSpeed4Motor(R,1);
-		setSpeed4Motor(L,2);
-		chase_LeftDCM_Backward();
+		setInsideTurn(2,10);
     	break;
     case 23:
-		L = .4 * R;
+//		chase_LeftDCM_Backward();
+		chase_LeftDCM_Forward();
 		setSpeed4Motor(R,1);
-		setSpeed4Motor(L,2);
-		chase_LeftDCM_Backward();
+		setInsideTurn(2,11);
     	break;
     case 24:
-		L = .2 * R;
+//		chase_LeftDCM_Backward();
+		chase_LeftDCM_Forward();
 		setSpeed4Motor(R,1);
-		setSpeed4Motor(L,2);
-		chase_LeftDCM_Backward();
+		setInsideTurn(2,12);
     	break;
+
+//**********
+
+    case 2:  //right backward
+//		chase_RightDCM_Backward();
+		chase_RightDCM_Forward();
+		chaseRight_Forward_Backward();
+		setSpeed4Motor(L,2);
+		setInsideTurn(1,2);
+    	break;
+    case 3:
+//		chase_RightDCM_Backward();
+		chase_RightDCM_Forward();
+		setSpeed4Motor(L,2);
+		setInsideTurn(1,3);
+    	break;
+    case 4:
+//		chase_RightDCM_Backward();
+		chase_RightDCM_Forward();
+		setSpeed4Motor(L,2);
+		setInsideTurn(1,4);
+    	break;
+    case 5:
+//		chase_RightDCM_Backward();
+		chase_RightDCM_Forward();
+		setSpeed4Motor(L,2);
+		setInsideTurn(1,5);
+    	break;
+
+
+
+    case 7:     //right forward
+		chase_RightDCM_Forward();
+//		chase_LeftDCM_Forward();
+		setSpeed4Motor(L,2);
+		setInsideTurn(1,6);
+    	break;
+    case 8:
+		chase_RightDCM_Forward();
+		setSpeed4Motor(L,2);
+		setInsideTurn(1,7);
+    	break;
+    case 9:
+		chase_RightDCM_Forward();
+		setSpeed4Motor(L,2);
+		setInsideTurn(1,8);
+
+    	break;
+    case 10:
+		chase_RightDCM_Forward();
+		setSpeed4Motor(L,2);
+		setInsideTurn(1,9);
+
+    	break;
+    case 11:
+		chase_RightDCM_Forward();
+		setSpeed4Motor(L,2);
+		setInsideTurn(1,10);
+    	break;
+
+
     default:
 		setSpeed4Motor(0,9);
 		Serial.println(" Chaser Stopped.");
 		chaseStop();
     	break;
    }
+    //resume speed/direction
+    switch(directionFlag)
+    {
+        case FORWARD:
+        	setSpeed4Motor(vehiclePedal ,9);
+        	chaseForward();
+        		break;
+        case BACKWARD:
+        	setSpeed4Motor(vehiclePedal ,9);
+        	chaseBackward();
+        		break;
+        case XCARE:
+        	setSpeed4Motor(0 ,9);
+        	chaseStop();
+        	    break;
+    }
+    setSpeed4Motor(vehiclePedal, 9);
 	Serial.println("");
 }
 
@@ -420,6 +498,13 @@ void setSpeed4Vehicle(int inSpeed)
 }
 
 
+int getVehiclePedal()
+{
+	return vehiclePedal;
+}
+
+
+
 void disable_dcm()
 {
 	leftdcm1->run(RELEASE);
@@ -428,8 +513,8 @@ void disable_dcm()
 
 void setup_dcm()
 {
-leftdcm1 ->setSpeed(125);
-rightdcm2 ->setSpeed(125);
+leftdcm1 ->setSpeed(vehiclePedal);
+rightdcm2 ->setSpeed(vehiclePedal);
 leftdcm1->run(FORWARD);
 rightdcm2->run(FORWARD);
 // turn on motor
