@@ -1,18 +1,27 @@
-/* Copyright © 1988-2020 by Abbott Analytical Products. All Rights Reserved.
- * 201007_tr Minor housekeeping of comments.  LCD is is thrown as error but compiles.
+/* Copyright © 1988-2021 by Abbott Analytical Products. All Rights Reserved.
+ * 210104_tr Final tweaks to content of help() strings.
+ * 210103_tr Road tested satisfacorily
+ * 210102_tr Verified that getES_Flg goes straight to shutdown the Wifi and movement.
+ *           added help() content.
+ * 201231_tr Retrofit help() content.
+ * 201230_tr Still compiles and uploads to Mega
+ *           Cleanup dev comments.  Set wait4loop to 1K
+ * 201222_tr Road Tested gamepad-otg-android.  The Stop and button seemed
+ *           to work well.  The joystick still seemed a bit sluggish.
+ *           The Compass worked well when hooked to the Wifi via udp.
+ * 201122_tr Test run 1725: Compass mode worked well until return from Gamepad mode
+ *           Gamepad mode acquired switch from COmpass.  But failed to acquire
+ *           XY joystick changes except for "minor" right turn and halt.
+ *           Note that the vehcile goes into UNK state and quits
+ *           flashing LCD red.  Then it recovers and flashes but
+ *           does not respond to COmpass or Gamepad inputs.
+ * 201010_tr Create cloeUp() to KILLIT
  * 200925_tr Redo loop() with switch/case.  Preliminary test favorable.
  * 200914_tr Rug test showed need for kill button.  Also seems to no longer go
  *           in reverse direction.  The feedback seems to have latency that may
  *           need to be addressed.  Observed that the accelerator pushed
  *           balls to the wall is the best for recovery of active gamepad.
  *           Love the LCD red/flash during active wifi looping.
- * 200913_tr Make wifiloop() available and waiting for
- *           10,000 with not activity.
- * 200912_tr Revisited the buzzer soundings. Added clear Base Shield Port ID
- *           for LED, btn, buzzer.  Sound ques
- *           Happy Birthday:  Ready
- *           Buzzer Cycle:  WIFI UDP setup complete> Take control or lose it.
- *           ShaveNHaircut:  About to halt active WIFI UDP.
  * 200907_tr Verified UDP functional and communicates with Android a038_rc_wifi app
  * 200604_tr Added wifi_mgr.ino for WiFi capability.
  * 200529_tr Initial constructions.  Borrowed heavily from a034_nc_chickadee.
@@ -28,16 +37,7 @@
 // GLOBALS
 //------------------------------------------------------------------------------
 
-//int   sofar;            // how much is in the buffer
-int copyMax = 1;
-int copyKnt = 0;
 
-
-
-// settings
-
-//From GCodeParser
-//#define COMMAND_SIZE 128
 char commands[COMMAND_SIZE];
 byte serial_count;
 int no_serialData = 0;        // attempts to read Serial port
@@ -50,7 +50,6 @@ bool comment = false;
 //------------------------------------------------------------------------------
 
 
-//170701_tr
 //200914
 //rgb_lcd lcd;
 
@@ -61,10 +60,6 @@ bool noSound = false; //true;        // turn-off sound
 
 String readString = "";
 int ledState = LOW;             // ledState used to set the LED
-long previousMillis = 0;        // will store last time LED was updated
-// the follow variables is a long because the time, measured in miliseconds,
-// will quickly become a bigger number than can be stored in an int.
-long interval = 1000;           // interval at which to blink (milliseconds)
 int doneFlag = -1;              // think tristate
                                 //start
                                 //USB setup
@@ -72,7 +67,9 @@ int kntr = 0;                   // loop counter
 int loopknt = 0;         // count loop cycles
 bool loopdebug = true;  //false;   // controls serial printing of debug info:  true is doit
 int workknt = 0;         // count cycle through work
-int wait4loop = 1000; //100;//10000; //4;  //10000;
+//int wait4loop = 10; //for dev test
+//int wait4loop = 100; //for dev test
+int wait4loop = 10000;  //for production use 10000;
 int endOn = wait4loop;         // 200;         // end work loop after
 int closeLoopOn = wait4loop;   // end arduino looping after 200 cycles
 bool shutdownWifi = false;
@@ -124,70 +121,74 @@ void foutput(const char *code,float val)
 }
 
 
-/**
- * print the current position, feedrate, and absolute mode.
- */
-/* not used
-void where()
-{
-  foutput("popped from where() of venit.ino", BADNbr);
-  foutput("kntX",kntX);
-  foutput("kntY",kntY);
-  foutput("Distance along X Axis",kntX / x_steps2in );
-  foutput("Distance along Y Axis",kntY / y_steps2in);
-  foutput("x units", x_steps2in);
-  foutput("y units", y_steps2in);
-  foutput("a units", a_steps2deg);
-  foutput("b units", b_steps2deg);
-  foutput("Current_LocX",current_loc.x);
-  foutput("Current_LocY",current_loc.y);
-  foutput("Current_LocA",current_loc.a);
-  foutput("Current_LocB",current_loc.b);
 
 
-  foutput("Last fp.X requested via gCode ",fp.x);
-  foutput("Last fp.Y requested via gCode ",fp.y);
-  foutput("Last fp.a requested via gCode ",fp.a);
-  foutput("Last fp.b requested via gCode ",fp.b);
-
-  foutput("F",feedrate);
-  foutput("E", extrude);
-  foutput("abs_mode ",abs_mode);
-}
-*/
+int helpdelay = 100;
 
 void help()
 {
-	//Serial.println("Need help with Flash memory F thingie");
-
+	  bool ackhelp = false;
+	  char c;
+	  int helpknt = 0;
+	  int helpmax = 500;
 	  Serial.println(F("Help Strings: "));
 
-/*
-	  Serial.print(F("GcodeCNCDemo2AxisV1 Help: "));
+/* */
+	  Serial.print(F("Critter Chaser Help: "));
 	  Serial.println(VERSION);
-	  Serial.println(F("Unit of Measure is in Inches for Linear and Degrees for Angular"));
-	  Serial.println(F("Commands:  Used by dilningc"));
-	  Serial.println(F("G00 [X(steps)] [Y(steps)] [E(extrude)] [F(feedrate)]; ==> Linear"));
-	  Serial.println(F("G01 [X(steps)] [Y(steps)]  [E(extrude)] [F(feedrate)]; ==> Linear"));
-	  Serial.println(F("G01 G93 G53 [A(degs)]  [B(degs)][F(feedrate)]; ==> Angular"));
-	  Serial.println(F("G20 Set units to inches"));
-	  Serial.println(F("G04 P[seconds]; ==> delay"));
-	  Serial.println(F("G90; absolute mode"));
-	  Serial.println(F("G93; Angular movement of StepperA/B"));
-	  Serial.println(F("G53; Machine Coordinate System. Ignored"));
-	  Serial.println(F("M02; End of Program"));
-	  Serial.println(F("M18; - disable motors"));
-	  Serial.println(F("M100; - this help message"));
-	  Serial.println(F("M114; - report position and feedrate"));
-	  Serial.println(F("All commands must end with a newline."));
+	  Serial.println(F("See http://abbottanp.com/artifacts/squirrelChaser/index.html"));
+	  Serial.println(F("Your Access Point Name and password must be entered in jelly.h and"));
+	  Serial.println(F("   then the a038critterChaser project recompiled."));
+	  Serial.println(F("Vehicle control is via Orion based prototype gamepad-otg-android."));
+	  Serial.println(F("The android needs access to your Wifi Access Point so it can send"));
+	  Serial.println(F("    control instructions."));
+	  Serial.println(F("Compass Controls: Forward, Backward, Left, Right, Stop"));
+	  Serial.println(F("Gamepad Controls implemented: XY joystick, speed, and A command"));
+	  Serial.println(F("    button."));
+	  Serial.println(F("LCD White: Setup underway for Mega and Wifi    "));
+	  Serial.println(F("LCD Flashing Red: Awaiting Android/Gamepad Inputs    "));
+	  Serial.println(F("LCD Flashing Green: Converting Inputs to Vehicle Control Instructions/Motion."));
+	  Serial.println(F("LCD Dark: Vehicle sleeping needs restart to activate control."));
+	  Serial.println(F("    Scrolling dot continues indicating heartbeat."));
+	  Serial.println(F("    Press Vehicle/Mega on-board reset button to re-awaken."));
+	  Serial.println(F("Happy Birthday: Setup running    "));
+	  Serial.println(F("Shave and Haircut:    Vehicle going to sleep."));
+	  Serial.println(F("Bummmp-Dat 4x: Setup complete start controlling. "));
+	  Serial.println(F("    Green LED On.  LCD Flashing Red"));
+	  Serial.println(F("USB Monitor/GTKterm:     "));
+	  Serial.println(F("   Setup Phase: Status messages...  "));
+	  Serial.println(F("msg:     .....setup() Fina..... "));
+	  Serial.println(F("msg:     ..<<<<<<<<<<< Starter completed  Loop"));
+	  Serial.println(F("msg:     <<<<<<<< Primer: going to wifiloop"));
+	  Serial.println(F("msg:     awaiting Serial inputs > "));
+	  Serial.println(F("  IDLING Phase:  Compass Mode and/or Gamepad   "));
+	  Serial.println(F("     User control inputs via mode selected"));
+	  Serial.println(F("msg:     Done with IDLING going to GOODBYE"));
+	  Serial.println(F("msg:     runtime (sec)........xxxx.0000"));
+	  Serial.println(F("msg:     yyyyyy ::... Loop count since last user inputs shutter() cChaser"));
+	  Serial.println(F("msg:     Critter Chaser has been disabled."));
+	  Serial.println(F("  Awaiting Reset Phase:  "));
+	  Serial.println(F("msg:     ."));
+	  Serial.println(F("     Vehicle power lights glow.    "));
+	  Serial.println(F("     Wifly Shield Red shows slow blink.  "));
+	  Serial.println(F("Pressing the ES icon on the Android       "));
+	  Serial.println(F("  invokes the Emergency shut-down process   "));
+	  Serial.println(F("     Vehicle motion halts, LCD goes blank,  "));
+	  Serial.println(F("     LED, buzzer turned-off."));
+	  Serial.println(F(" ++ Vehicle requires a system reset"));
+	  Serial.println(F("     from Mega or Wifi reset button -OR "));
+	  Serial.println(F("     external upload to reset "));
+	  Serial.println(F(" ++ No impact on Gamepad or Android  "));
+	  Serial.println(F(" ++ IDE Monitor/GTKterm display"));
+	  Serial.println(F("      Emergency Stop annunication "));
+	  Serial.println(F("      Then  displays . --dot-- on new line until reset."));
+	  Serial.println(F("Compass Mode Stop: Press Android Stop Icon"));
+	  Serial.println(F("Gamepad Mode Stop:"));
+	  Serial.println(F("   Release Joystick to center -OR-"));
+	  Serial.println(F("   Drop Speed to Potentiometer 0 postion"));
+	  Serial.println(F("   Press Android Stop Icon"));
+	  Serial.println(F("Vehicle speed resumes as user engages Compass/Gamepad"));
 
-//	  Serial.println(F("-G02 [X(steps)] [Y(steps)] [I(steps)] [J(steps)] [E(extrude)] [F(feedrate)]; ==> clockwise arc"));
-//	  Serial.println(F("-G03 [X(steps)] [Y(steps)] [I(steps)] [J(steps)] [E(extrude)] [F(feedrate)]; ==> counter-clockwise arc"));
-//	  Serial.println(F("-G21 Set units to mm"));
-//	  Serial.println(F("-G91; - relative mode"));
-//	  Serial.println(F("-G92 [X(steps)] [Y(steps)]; - change logical position"));
-//	  Serial.println(F("-M05; - Stop spindle"));
-*/
 }
 
 
@@ -197,8 +198,11 @@ void help()
 void ready_USBinputs()
 {
 //  sofar=0;  // clear input buffer
-  Serial.print(F(">"));  // signal ready to receive input
+  Serial.print(F("awaiting Serial inputs >"));  // signal ready to receive input
 }
+
+
+
 
 void mgtCmdLn(char c)
 {
@@ -241,9 +245,6 @@ foutput("serial_count....: ", serial_count);
 	    Serial.print("ln 2 cmd..: ");
 	    Serial.println(commands);
 	    showInstruction();
-//	    parse_cmdln(commands, serial_count);
-	    //clear command.
-//	    init_parse_cmdln();
 	  }
 	  }
 	  }	   //mgtCmdLn()
@@ -302,14 +303,11 @@ bool checkBtn()
      showDisplayDebug(readString);
      digitalWrite((sigId_btn+0),LOW);
      digitalWrite((sigId_led+0),LOW);
-Serial.println("soundBuzz3");
-//     soundBuzz3(); //siren
      statFlg = true;
   } //ifpressed
   else
   {
-//	  Serial.println(loopknt);
-	  digitalWrite((sigId_btn+0),LOW);
+ 	  digitalWrite((sigId_btn+0),LOW);
       if (shutdownWifi)
     	  digitalWrite((sigId_led+0),LOW);
       else {digitalWrite((sigId_led+0),HIGH);}
@@ -323,8 +321,6 @@ Serial.println("soundBuzz3");
 
 void setupCommo()
 {
-//not used	  doneFlag = 0;
-//	  ready_file4reading();
 	  ready_USBinputs(); // ready to pass USB Serial traffic  to loop()
 	  show2Reset();
 }
@@ -338,18 +334,25 @@ void dowork()
    breatherLED();
    setupCommo();
    //un-needed siren sound
-   foutput("buzz4Knt..: ", buzz4Knt);
+   foutput("\nbuzz4Knt..: ", buzz4Knt);
    while ((buzz4Knt < buzzOff) && ( !noSound))
    {
 	   soundBuzz4(); //siren
 	   digitalWrite((sigId_buz+0),LOW);
 	   buzz4Knt++;
-//	   Serial.print(buzz4Knt);
-//	   Serial.println("  : Buzz4Knt");
    }
    digitalWrite((sigId_buz+0),LOW);
    buzz4Knt = 0;
 
+}
+
+void closeUp()
+{
+    calmShowDisplay();
+    allstop();
+	close_udp();    //turn-off wifi-TCP
+    shutdownWifi = true;
+    Serial.println("Emergency Stop.  Restart Everybody");
 }
 
 void shutter()
@@ -361,18 +364,14 @@ void shutter()
     	    delay(1000);
             disable_dcm();  //shutdown dc motors
        	    close_udp();    //turn-off wifi-TCP
-            Serial.print(loopknt);
-//           Serial.println("  :loopknt at shutdown");
-//           Serial.print(doneFlag);
-//           Serial.println("  :doneFlag");
+            Serial.print(loopknt);   //trouble shooting
+            Serial.println(" ::... Loop count since last user inputs shutter() cChaser");
             Serial.println("Critter Chaser has been disabled. ");
-      	    digitalWrite((sigId_led+0),LOW);
             shutdownWifi = true;
  }
 
 
 int stateFlg = 0; //0: throw first message
-//see a038_config.h int const XCARE = -1;
 
 int const STARTER = 0;
 int const PRIMER  = 1;
@@ -384,73 +383,101 @@ int const IDLING = 9999;
 
 void setup()
 {
+
+
       stateFlg = XCARE;
 	  Serial.begin(BAUD);  // open coms
 	  Serial.println("Serial is running");
+	  help();
       wifisetup();
-	  help();  // say hello
 	  pinMode((sigId_led+0),INPUT);    //LED   _
 	  pinMode((sigId_btn+0),INPUT);    //btn
 	  pinMode((sigId_buz+0),OUTPUT);   //buzzer
 	  allstop();
 	  setup_controller();  //ams1
-//Skip for now not using steppers
-//	  set_position(0,0,0,0,0);  // set staring position
-	 //init_steppers does this feedrate((MAX_FEEDRATE + MIN_FEEDRATE)/2);  // set default speed
-
-//not used 	  init_parse_cmdln(); //process string
 	  init_steppers();   //ams1 Steppers and DC Motors
-//not used	  setup_sd();
       setupCommo();
       showSetup();  //fires LCD message
       stateFlg = STARTER;
 
+      Serial.println("..............setup() Fina...........");
+
 }
 
 
-// The loop function is called in an endless loop
+//Neds some thinking
+
+int prep2RunWifiLoop4Record()
+{
+    if ((checkForUDPactivity())&& (!Need2Killwifi()))
+    {
+      loopknt = 2; //need to skip past dowork() and buzzer
+    }
+    return 2;
+}
+
+
+//need to test the getES_Flg for stopping the wifi commo
+
 void loop()
 {
-// works from here
-//	wifiloop();
-    if (checkBtn())
-    	{stateFlg = KILLIT;}
-//    if ((stateFlg != KILLIT) && (stateFlg != DEAD))
-//    {
-//    	Serial.print(stateFlg);
-//        Serial.println(" Entering switch loop");
-//    }
+    if ((stateFlg == DEAD) || (stateFlg == KILLIT))
+    {
+    	;
+    }
+    else
+    {
+	    if (((checkBtn()) || (Need2Killwifi()))&& (stateFlg < IDLING)|| (getES_Flg()))
+	    	{
+	    	  stateFlg = KILLIT;
+	  	      allstop();
+	    	}
+    }
     switch (stateFlg)
     {
     case IDLING:
-        loopknt++;
-        flipShowDisplay2Red();
-	    calmShowDisplay();
-        wifiloop();
-        if ((checkForUDPactivity())&& (!Need2Killwifi()))
+        loopknt++;    // maybe better to place just above the if for loopkn > closeLoopOn + 1
+        reset_is_UDP_active2false();
+        if (getPrimerFlg())
         {
-    	  loopknt = 2; //need to skip past dowork() and buzzer
-    	  reset_is_UDP_active();
+           flipShowDisplay2Red();
+	       calmShowDisplay();
+	       if (!getES_Flg())
+	       {
+              wifiloop();
+              prep2RunWifiLoop4Record();
+	       }
         }
-//        Serial.print(loopknt);
-//        Serial.println("  :loopknt wifiloop cycle finished");
-        Serial.println(".");
+        else
+        {
+        	Serial.println("Houston the WIFI has a problem!");
+        	showDisplay("WIFI Issue");
+        }
 	    if (loopknt >= closeLoopOn+1)
-	    	{stateFlg = GOODBYE;}
+	    	{
+	    	Serial.println("Done with IDLING going to GOODBYE");
+	    	stateFlg = GOODBYE;
+	    	}
         break;
     case STARTER:
-	   // if (buzz1Knt < buzzOff) //play tune once
 	    {
 		  soundBuzz1(); //happy birthday
 	      buzz1Knt++;
 	    }
+	    setES_Flg2False();
 	    disable();  //not used steppers
-		Serial.println("\ngo to dowork");
-		dowork();  //sound buzzer4
+		Serial.println("\n...<<<<<<<<<<< Starter completed  Loop");
 		loopknt++;
-		stateFlg = IDLING;
+		stateFlg = PRIMER;
         break;
-
+    case PRIMER:
+		Serial.println("\n<<<<<<<< Primer: going to wifiloop");
+        wifiloop();
+        prep2RunWifiLoop4Record();
+		setPrimer();
+		dowork();  //sound buzzer4
+		stateFlg = IDLING;
+    	break;
     case GOODBYE:
 	    soundBuzz2(); //shave haircut
 	    buzz2Knt++;
@@ -458,10 +485,12 @@ void loop()
         {shutter();}
         stateFlg = DEAD;
         break;
-    case DEAD:
     case KILLIT:
+    	stateFlg = DEAD;
 	    break;
+    case DEAD:
     case XCARE:
+        Serial.println(".");
 	    break;
     default:
     	Serial.println("default");

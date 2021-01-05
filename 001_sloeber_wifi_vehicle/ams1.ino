@@ -1,4 +1,5 @@
 /* Copyright © 1988-2020 by Abbott Analytical Products. All Rights Reserved.
+ * 201226_tr Adjusted to fit s035
  * 200914_tr Large sections of this file refer to steppers.  Delete reference with
  *           extreme prejudice.
  * 200529_tr Adapted from a34_nc_chickadee ams1.ino
@@ -38,8 +39,8 @@ Adafruit_StepperMotor *m2 = AFMSbot.getStepper(320, 2);   // ditto
 //Adafruit_StepperMotor *m5 = AFMStop.getStepper(320, 2);   // ditto
 
 
-Adafruit_DCMotor *leftdcm1 = AFMStop.getMotor(3);
-Adafruit_DCMotor *rightdcm2 = AFMStop.getMotor(4);
+Adafruit_DCMotor *dcmotor1 = AFMStop.getMotor(3);
+Adafruit_DCMotor *dcmotor2 = AFMStop.getMotor(4);
 
 
 

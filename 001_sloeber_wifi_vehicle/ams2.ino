@@ -1,4 +1,12 @@
-/* Copyright © 1988-2020 by Abbott Analytical Products. All Rights Reserved.
+/* Copyright © 1988-2021 by Abbott Analytical Products. All Rights Reserved.
+ * 210102_tr Removed extraneous direction msg.
+ * 201230_tr Removed extraneous comments and commented out others
+ * 201227_tr Restart the integrate again.
+ * 201226_tr Tried to integrate s035.  Created a real mess
+ * 201222_tr Correct soft right/left
+ * 201213_tr Integrated s031_mapAzimuth2seg.ino
+ * 201121_tr Restart effort.  Remove troubleshhoting serial_msg
+ * 201009_tr Correct map_turntime using motor instead of "2"
  * 201007_tr Added getvehiclepedal() and set ams2_SPEED to 125;
  *           altered setup_dcm() to use vehiclePedal
  * 201006_tr Incorporate roadtest observations on turning speed and settling.
@@ -12,23 +20,28 @@
  *           to drive a pair of tracks for steering.
  * 200604_tr Adapted the ams2.ino of a034_ project for a038
  *           replacing the steppers with dc motors
- *           leftdcm1 and rightdcm2.
+ *           dcmotor1 and dcmotor2.
  *
  */
+
 
 #include "a038_config.h"
 
 
 int ams2_SPEED = 125;  //swag at starting spped of both motors
-int leftdcm1_SPEED = ams2_SPEED;
-int rightdcm2_SPEED = ams2_SPEED;
+int vehiclePedal = ams2_SPEED;
+int mapRawSpeed = 0;   //until user inputs received.
+
+
+ int dcmotor1_SPEED = vehiclePedal;
+ int dcmotor2_SPEED = vehiclePedal;
+
 int dcHold = 400;  // delay in halting
                    // 100  failed
                    // 1000 ok
                    // 500, 400 good
                    // 250, 300, 350 marginal
 int dcShort = 10;   // Derived from Adafruit example for DCMotors
-int vehiclePedal = ams2_SPEED;
 const int deadZone = 10;
 const int deadMin  = -deadZone;
 const int deadMax  = deadZone;
@@ -52,107 +65,119 @@ const int soundAMS2Stopper = 3;
 int buzzKnt4ams2 = 0;        // Switch for shave & haircut
 int buzzOff4ams2 = 1;
 
+
+
 void soundOfAMS2()
 {
 if ((buzzKnt4ams2 < buzzOff4ams2) && (soundAMS2Knt < soundAMS2Stopper))
 {
-   soundBuzz3();
+  //not needed for spike   soundBuzz3();
    buzzKnt4ams2++;
  }
  soundAMS2Knt ++;
 }
 
+const int delay4_90 =2000;
+
+
+void releaseMotors()
+{
+    delay(delay4_90);
+	dcmotor1->run(RELEASE);   //testing
+	dcmotor2->run(RELEASE);   //testing
+}
 
 
 void chaseForward()
 {
-	Serial.println("chase_Forward()");
+//	Serial.println("chase_Forward()");
 	directionFlag = FORWARD;
-	rightdcm2->run(FORWARD);
-	leftdcm1->run(FORWARD);
-    delay(dcHold);
+	dcmotor2->run(FORWARD);
+	dcmotor1->run(FORWARD);
+	releaseMotors();
 }
 
 void chaseBackward()
 {
-	Serial.println("chase_Backward()");
+//	Serial.println("chase_Backward()");
 	directionFlag = BACKWARD;
+	dcmotor1->run(BACKWARD);
+	dcmotor2->run(BACKWARD);
+	releaseMotors();
 
-	leftdcm1->run(BACKWARD);
-	rightdcm2->run(BACKWARD);
-    delay(dcHold);
-
-}
-
-void chaseDCM1() //90 degrees right
-{
-	Serial.println("chase_Right");
-
-	leftdcm1->run(FORWARD);
-	rightdcm2->run(RELEASE);
-    delay(dcHold);
 
 }
 
-void chaseDCM2() //90 degrees left
-{
-	Serial.println("chase_Left");
 
-	leftdcm1->run(RELEASE);
-	rightdcm2->run(FORWARD);
-    delay(dcHold);
+
+
+void chaseDCM2() //90 degrees right
+{
+	dcmotor1->run(FORWARD);
+	dcmotor2->run(RELEASE);
+    delay(delay4_90);
+	dcmotor1->run(RELEASE);   //testing
+}
+
+void chaseDCM1() //90 degrees left
+{
+	dcmotor1->run(RELEASE);
+	dcmotor2->run(FORWARD);
+    delay(delay4_90);
+    dcmotor2->run(RELEASE);  //for test
 
 }
 
 
 void chaseStop()
 {
-   Serial.println("chase_Stop()");
   directionFlag = XCARE;
-
-   leftdcm1->run(RELEASE);
-   rightdcm2->run(RELEASE);
+   dcmotor1->run(RELEASE);
+   dcmotor2->run(RELEASE);
 }
 
 
 /* By Joystick
  * Begin Tank Differntial Sterring */
 
-
-void chase_LeftDCM_Forward()
+void chase_RightDCM_Forward()
 {
-	Serial.println("chase_LeftDCM_Forward()");
-	leftdcm1->run(FORWARD);  //Slowdown
-	rightdcm2->run(FORWARD);
-    //delay(dcHold);
+//	Serial.println("chase_RightDCM_Forward()");
+	dcmotor1->run(RELEASE);
+	dcmotor2->run(FORWARD);
+    delay(delay4_90/2);
+	dcmotor2->run(RELEASE);
 
 }
 
-void chase_RightDCM_Forward()
+void chase_LeftDCM_Forward()
 {
-	Serial.println("chase_RightDCM_Forward()");
-	leftdcm1->run(FORWARD);
-	rightdcm2->run(FORWARD);   //Slowdown
-    //delay(dcHold);
+//	Serial.println("chase_LefttDCM_Forward()");
+	dcmotor1->run(FORWARD);
+	dcmotor2->run(RELEASE);
+    delay(delay4_90/2);
+	dcmotor1->run(RELEASE);
 
 }
 
 
 void chase_LeftDCM_Backward()
 {
-	Serial.println("chase_LeftDCM_Backward()");
-	leftdcm1->run(BACKWARD);
-	rightdcm2->run(BACKWARD);    //Slowdown
-    //delay(dcHold);
+//	Serial.println("chase_LeftDCM_Backward()");
+	dcmotor1->run(BACKWARD);
+	dcmotor2->run(RELEASE);
+    delay(delay4_90/2);
+	dcmotor1->run(RELEASE);
 
 }
 
 void chase_RightDCM_Backward()
 {
-	Serial.println("chase_RightDCM_Backward()");
-	leftdcm1->run(BACKWARD);    //Slowdown
-	rightdcm2->run(BACKWARD);
-    //delay(dcHold);
+//201121	Serial.println("chase_RightDCM_Backward()");
+	dcmotor1->run(RELEASE);
+	dcmotor2->run(BACKWARD);
+    delay(delay4_90/2);
+	dcmotor2->run(RELEASE);
 
 }
 
@@ -162,66 +187,113 @@ void chase_RightDCM_Backward()
  * End Drag wheel sterring
  */
 
+int getVehiclePedal()
+{
+	return vehiclePedal;
+}
+
+void setMappedRawSpeed()
+{
+	mapRawSpeed = getVehiclePedal();
+//    Serial.print(mapRawSpeed);
+//    Serial.println(".....:: mapRawSpeed");
+
+}
+
+int getMappedRawSpeed()
+{
+	return mapRawSpeed;
+}
+
+void  resetVehiclePedal()
+{
+	vehiclePedal = getMappedRawSpeed();
+}
+
+
+
+
+
+void setUserDefinedInputSpeed4Vehicle(int inSpeed)
+{
+/* https://www.arduino.cc/reference/en/language/functions/math/map/
+ * map(value, fromLow, fromHigh, toLow, toHigh)
+Parameters
+
+value: the number to map.
+fromLow: the lower bound of the value’s current range.
+fromHigh: the upper bound of the value’s current range.
+toLow: the lower bound of the value’s target range.
+toHigh: the upper bound of the value’s target range.
+ *
+ */
+      vehiclePedal = map(inSpeed, 0, 1024, 0, MotorSpeedMax);
+ //     Serial.print(vehiclePedal);
+ //     Serial.println(".....::vehiclePedal post mapping");
+      setMappedRawSpeed();
+	//setSpeed4Motor(vehiclePedal, 9);
+}
+
+
 
 void setSpeed4Motor(int inSpeed, int motor)
 {
-	int jsMinSpeed = RangeMin;
-	int jsMaxSpeed = RangeMax;    // -/+500  ranges
-	int dcMmin     = 0;
-	int dcMmax     = MotorSpeedMax;
-    int setSpeed = 0;
+//	int jsMinSpeed = RangeMin;
+//	int jsMaxSpeed = RangeMax;    // -/+500  ranges
+//	int dcMmin     = 0;
+//	int dcMmax     = MotorSpeedMax;
+    int setVelocity = 0;
 //200926
    if (inSpeed <= 15)
 		{
-	        inSpeed = setSpeed;
-//			leftdcm1  = inSpeed;
-//			rightdcm2 = inSpeed;
+	        inSpeed = setVelocity;
+//			dcmotor1  = inSpeed;
+//			dcmotor2 = inSpeed;
 		}
-   setSpeed = inSpeed;
+   setVelocity = inSpeed;
    switch (motor)
    {
-   case 1: leftdcm1 ->setSpeed(setSpeed);  break;
-   case 2: rightdcm2 ->setSpeed(setSpeed); break;
+   case 1: dcmotor1 ->setSpeed(setVelocity);  break;
+   case 2: dcmotor2 ->setSpeed(setVelocity); break;
    default:
-   	leftdcm1 ->setSpeed(inSpeed);
-   	rightdcm2 ->setSpeed(inSpeed);
+   	dcmotor1 ->setSpeed(inSpeed);
+   	dcmotor2 ->setSpeed(inSpeed);
    	break;
    }
-   Serial.print(vehiclePedal);
-   Serial.print("  << vehicle speed     inSpeed = setSpeed ==> ");
-   Serial.println(setSpeed);
-}
+//   Serial.print(getVehiclePedal());
+//   Serial.print("  << vehicle pedal     inSpeed = setVelocity ==> ");
+//   Serial.print(setVelocity);
+//   Serial.print("    motor:");
+//   Serial.println(motor);
 
-double directionVector(int px, int py)
-{
-	double square;
-	double dpx, dpy;
-	dpx = (double)px;
-	dpy = (double)py;
-	square = sq(dpx) + sq(dpy);
-    return sqrt(square);
 }
 
 
 
+/*
+* NOTE: 201226_1020
+* See https://www.medcalc.org/manual/atan2_function.php
+* Added (xx <= 0) and (yy < 0)  was (xx < 0)
+* Now chases_Hard_Right
+*/
 double vector_analysis(int xx, int yy)
 {
-	double angle, azimuth;
+	double angle = 0.0 ;  // as azimuth off forward line from origin of motion
 	const double rad2deg = 180.0/PI;
 	if (xx > 0)
 	   {angle = atan2(double(yy), (double) xx) * rad2deg;}
 	else if ((xx < 0) && (yy >= 0))
 	   {angle = (atan2(double(yy), (double) xx))* rad2deg;}
-	else if ((xx < 0) && (yy < 0))
+	else if ((xx <= 0) && (yy < 0))   //201225
 	   {angle = (atan2(double(yy), (double) xx))* rad2deg;}
 	else if ((xx == 0) && (yy > 0))
 		{angle = (PI/2) * rad2deg;}
 	else if ((xx == 0) && (yy == 0))
 		{angle = 999;} //basically undefined.
 
-	Serial.print(angle);
-	Serial.println(" ::.....atan2h angle derived");
-	return azimuth = angle;
+//	Serial.print(angle);
+//	Serial.println(" ::.....atan2h angle derived");
+	return angle;
 }
 
 void chaseLeft_Forward_Backward()
@@ -262,28 +334,35 @@ void chaseRight_Forward_Backward()
 
 }
 
-
-void setInsideTurn(int motor, int segpass)
+/* disregard
+void map_turntime(int motor, int segpass)
 		{
 			int indx = 0;
 			int indxMax = 4;
 		    int mph = 0;
-
-		  for (indx=0; indx<indxMax * segpass; indx++) {
-			    mph = (indx/indxMax) * vehiclePedal;
-				setSpeed4Motor(mph,2);
+          switch (motor)
+	      {
+          case 1:
+    		  for (indx=0; indx<indxMax * segpass; indx++) {
+    			    mph = (indx/(indxMax*segpass)) * vehiclePedal;
+    				setSpeed4Motor(mph,motor);
+        		    delay(dcShort);
+    		  } //for motor 2 s
+              break;
+          case  2:
+    		  for (indx=indxMax * segpass; indx!=0; indx--) {
+    			    mph = (indx/(indxMax*segpass)) * vehiclePedal ;
+    				setSpeed4Motor(mph,motor);
     		    delay(dcShort);
-		  }
-		  for (indx=indxMax * segpass; indx!=0; indx--) {
-			    mph = (indx/(indxMax*segpass)) * vehiclePedal ;
-				setSpeed4Motor(mph,2);
-		    delay(dcShort);
+    		  }
+    		  break;
+
 		  }
 		}
+*/
 
 
-
-/* Joystick range
+/* Joystick range  Makeblock JS only
  * rawx ranges -500 to 0 to 500  by test/observe 200913
  * rawy ranges -500 to 0 to 500  by test/observe 200913
  * dead zone: -100 to 100 for both  //assumed
@@ -294,229 +373,123 @@ void setInsideTurn(int motor, int segpass)
  * BACKWARD
  * RELEASE
  * Plus Speed control by motor 0 to 255
- *
- *
- *
- *
  */
+const int js_deadspot = 200;     //Set deadspot for allowing joystick to return to rest
+const int js_movement_pos =  js_deadspot;   //ignore change in steering if less than
+const int js_movement_neg = -(js_deadspot);   //ignore change in steering if more than
+
+
 void setDirection(int rawx, int rawy)
 {
-	int L = vehiclePedal; //DC motorspeed mapped to pedal
-	int R = vehiclePedal;
-	double azimuth;
-	const int rightMotor = 1;
-    const int leftMotor = 2;
-	Serial.print(rawy);
-	Serial.println(" :rawy value");
-	Serial.print(rawx);
-	Serial.println(" :rawx value");
-	azimuth = vector_analysis(rawx,rawy);
-	azimuthsegment = map(long(azimuth), -179, 180, 1,24  );
+	int L = getVehiclePedal(); //DC motorspeed mapped to pedal
+	int R = getVehiclePedal();
+//	double azimuth;
+//	const int rightMotor = 1;
+//    const int leftMotor  = 2;
+    if ((( rawx > js_movement_neg) && (rawx < js_movement_pos)) && (( rawy > js_movement_neg) && (rawy < js_movement_pos)))
+	{
+		setSpeed4Motor(0,9);
+//		Serial.print(rawx);
+//		Serial.print("  ...rawx          rawy.... ");
+//		Serial.println(rawy);
+//		Serial.println(" Box-Out Chaser Stopped.");
+		chaseStop();
 
-//Serial.print(azimuth);
-//Serial.println(" :azimuth for Chaser");
-Serial.print(azimuthsegment);
-Serial.println(" :direction segment for Chaser");
 
-    switch (azimuthsegment)
+ 	}
+    else
+    { // begin steering
+/*
+       reset vehicle speed from rawSpeed to original user
+       defined velocity and map to vehiclePedal
+*/
+    	resetVehiclePedal();
+    	setSpeed4Motor(getVehiclePedal(),9);
+//		Serial.print(rawx);
+//		Serial.print("  ...rawx          rawy.... ");
+//		Serial.print(rawy);
+//		Serial.print("  ......Speed..:: ");
+//		Serial.println(getVehiclePedal());
+    int tstAzimuth = (int)vector_analysis(rawx,rawy);
+//    Serial.print(tstAzimuth);
+//   Serial.println(" ::.....  tstAzimuth");
+//	Serial.print("  ......Speed..:: ");
+//	Serial.println(getVehiclePedal());
+    switch (tstAzimuth)
     {
-    case 12:  // forward
+    case   1 ... 30:
+    case -29 ... 0:
+//	   Serial.println("-29 to 30 Forward");
+       azimuthsegment = 1;
+ 		setSpeed4Motor(vehiclePedal,9);
+		chaseForward();
+      break;
+    case 121 ... 180:
+    case -179 ... -120:
+//	   Serial.println("120 to -120  Backwards");
+       azimuthsegment = 4;
+	   setSpeed4Motor(vehiclePedal,9);
+	   chaseBackward();
+       break;
+    case 61 ... 90:
+    case 91 ... 120:
+//	   Serial.println("61 to 120  Hard Left");
+       azimuthsegment = 3;
+   	   chaseDCM2();
 		setSpeed4Motor(vehiclePedal,9);
 		chaseForward();
-		Serial.println(" Chaser Forward.");
-    	break;
-    case 1:   // reverse
-	    setSpeed4Motor(vehiclePedal,9);
-		chaseBackward();
-    	break;
-    case 6:   // hard right
-    	chaseDCM1();
 
-    	break;
-    case 18:  // hard left
-    	chaseDCM2();
-    	break;
-    case 13:  //left forward
-		chase_LeftDCM_Forward();
-		setSpeed4Motor(R,1);
-		setInsideTurn(2,1);
-    	break;
-    case 14:
-		chase_LeftDCM_Forward();
-		setSpeed4Motor(R,1);
-		setInsideTurn(2,2);
-    	break;
-    case 15:
-		chase_LeftDCM_Forward();
-		setSpeed4Motor(R,1);
-		setInsideTurn(2,3);
-    	break;
-    case 16:
-		chase_LeftDCM_Forward();
-		setSpeed4Motor(R,1);
-		setInsideTurn(2,4);
-    	break;
-    case 17:
-		chase_LeftDCM_Forward();
-		setSpeed4Motor(R,1);
-		setInsideTurn(2,5);
-    	break;
-//**********
-    case 19:  //left backward
-//		chase_LeftDCM_Backward();
-		chase_LeftDCM_Forward();
-		setSpeed4Motor(R,1);
-		setInsideTurn(2,7);
-    	break;
-    case 20:
-//		chase_LeftDCM_Backward();
-		chase_LeftDCM_Forward();
-		setSpeed4Motor(R,1);
-		setInsideTurn(2,8);
+       break;
+    case -119 ... -90:
+    case -89 ... -60:
+//	   Serial.println("119 to -60  Hard Right");
+       azimuthsegment = 5;
+       chaseDCM1();
+		setSpeed4Motor(vehiclePedal,9);
+		chaseForward();
+       break;
+    case 31 ... 60:
+//	   Serial.println("31 to 60  Soft Left");
+       azimuthsegment = 2;
+	   setSpeed4Motor(R,1);
+	   //chase_LeftDCM_Forward();
+	   chaseLeft_Forward_Backward();
+		setSpeed4Motor(vehiclePedal,9);
+		chaseForward();
 
-   	break;
-    case 21:
-//		chase_LeftDCM_Backward();
-		chase_LeftDCM_Forward();
-		setSpeed4Motor(R,1);
-		setInsideTurn(2,9);
-    	break;
-    case 22:
-//		chase_LeftDCM_Backward();
-		chase_LeftDCM_Forward();
-		setSpeed4Motor(R,1);
-		setInsideTurn(2,10);
-    	break;
-    case 23:
-//		chase_LeftDCM_Backward();
-		chase_LeftDCM_Forward();
-		setSpeed4Motor(R,1);
-		setInsideTurn(2,11);
-    	break;
-    case 24:
-//		chase_LeftDCM_Backward();
-		chase_LeftDCM_Forward();
-		setSpeed4Motor(R,1);
-		setInsideTurn(2,12);
-    	break;
-
-//**********
-
-    case 2:  //right backward
-//		chase_RightDCM_Backward();
-		chase_RightDCM_Forward();
-		chaseRight_Forward_Backward();
-		setSpeed4Motor(L,2);
-		setInsideTurn(1,2);
-    	break;
-    case 3:
-//		chase_RightDCM_Backward();
-		chase_RightDCM_Forward();
-		setSpeed4Motor(L,2);
-		setInsideTurn(1,3);
-    	break;
-    case 4:
-//		chase_RightDCM_Backward();
-		chase_RightDCM_Forward();
-		setSpeed4Motor(L,2);
-		setInsideTurn(1,4);
-    	break;
-    case 5:
-//		chase_RightDCM_Backward();
-		chase_RightDCM_Forward();
-		setSpeed4Motor(L,2);
-		setInsideTurn(1,5);
-    	break;
-
-
-
-    case 7:     //right forward
-		chase_RightDCM_Forward();
-//		chase_LeftDCM_Forward();
-		setSpeed4Motor(L,2);
-		setInsideTurn(1,6);
-    	break;
-    case 8:
-		chase_RightDCM_Forward();
-		setSpeed4Motor(L,2);
-		setInsideTurn(1,7);
-    	break;
-    case 9:
-		chase_RightDCM_Forward();
-		setSpeed4Motor(L,2);
-		setInsideTurn(1,8);
-
-    	break;
-    case 10:
-		chase_RightDCM_Forward();
-		setSpeed4Motor(L,2);
-		setInsideTurn(1,9);
-
-    	break;
-    case 11:
-		chase_RightDCM_Forward();
-		setSpeed4Motor(L,2);
-		setInsideTurn(1,10);
-    	break;
-
-
-    default:
-		setSpeed4Motor(0,9);
-		Serial.println(" Chaser Stopped.");
-		chaseStop();
-    	break;
-   }
-    //resume speed/direction
-    switch(directionFlag)
-    {
-        case FORWARD:
-        	setSpeed4Motor(vehiclePedal ,9);
-        	chaseForward();
-        		break;
-        case BACKWARD:
-        	setSpeed4Motor(vehiclePedal ,9);
-        	chaseBackward();
-        		break;
-        case XCARE:
-        	setSpeed4Motor(0 ,9);
-        	chaseStop();
-        	    break;
-    }
-    setSpeed4Motor(vehiclePedal, 9);
-	Serial.println("");
+       break;
+    case -59 ... -30:
+//	   Serial.println("59 to -30  Soft Right");
+       azimuthsegment = 6;
+	   setSpeed4Motor(L,2);
+       chaseRight_Forward_Backward();
+	   setSpeed4Motor(vehiclePedal,9);
+	   chaseForward();
+       break;
+    }  // end of 6 segment switch
+//    ****** Start of old clipped from here
+    } // super else for switch
+    //resume speed/direction  switch(directionFlag)
 }
 
 
 
-void setSpeed4Vehicle(int inSpeed)
-{
 
-    vehiclePedal = map(inSpeed, 0, 1024, 0, MotorSpeedMax);
-	//setSpeed4Motor(vehiclePedal, 9);
-    Serial.print(vehiclePedal);
-    Serial.println(".....::vehiclePedal incoming");
-}
-
-
-int getVehiclePedal()
-{
-	return vehiclePedal;
-}
 
 
 
 void disable_dcm()
 {
-	leftdcm1->run(RELEASE);
-	rightdcm2->run(RELEASE);
+	dcmotor1->run(RELEASE);
+	dcmotor2->run(RELEASE);
 }
 
 void setup_dcm()
 {
-leftdcm1 ->setSpeed(vehiclePedal);
-rightdcm2 ->setSpeed(vehiclePedal);
-leftdcm1->run(FORWARD);
-rightdcm2->run(FORWARD);
+dcmotor1 ->setSpeed(vehiclePedal);
+dcmotor2 ->setSpeed(vehiclePedal);
+dcmotor1->run(FORWARD);
+dcmotor2->run(FORWARD);
 // turn on motor
 disable_dcm();
 delay(dcHold);
