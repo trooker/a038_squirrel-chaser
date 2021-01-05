@@ -1,8 +1,13 @@
-The a038_973_gamepad_otg_wifi.apk Android app installation package will install
-tje a038_973_gamepad_otg_wifi application.   
+
+The a038_973 was replaced by the a038_949.  See http://abbottanp.com/artifacts/squirrelChaser/002_gamepad.html
+for the latest and more detail discussion.
+
+
+The a038_949_gamepad_otg_wifi.apk Android app installation package will install
+tje a038_949_gamepad_otg_wifi application.   
 
 1> Vehicle Control Featrue:
-1.1> The a038_973_gamepad_otg_wifi provides the Android with two modes of operation for
+1.1> The a038_949_gamepad_otg_wifi provides the Android with two modes of operation for
 controlling vehicles: Compass Mode and Gamepad Mode.  These modes are selectable "on-the-fly".
 The playing field of each is slightly different but intuitive.  
 
@@ -20,11 +25,11 @@ interpert Abbottanp Gamepad) with the OTG-USB attached Android.  The OTG-USB
 attached Android operates as a Host by communicating wtih  the Orion-Gamepad as a client. 
 
 2> WIFI ready feature:
-2.1> The a038_973_gamepad_otg_wifi applicaiton address the WIFI access point using UDP.  
+2.1> The a038_949_gamepad_otg_wifi applicaiton address the WIFI access point using UDP.  
 The connection is predicated upon the existing WIFI connection process of the Android
 to which the Gamepad is attached.ilt, and uploaded to the  
 
-2.2> The a038_973_gamepad_otg_wifi does not "care" which mode the user employs at any specific
+2.2> The a038_949_gamepad_otg_wifi does not "care" which mode the user employs at any specific
 time slice.  As the playingfield is changed by the user, the application sense the change 
 and sends a message via WIFI to the vehicle to prepare to recieve control information 
 originating from the mode of operation the user currently has selected.  Regardless of 
