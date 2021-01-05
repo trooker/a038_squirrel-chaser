@@ -1,6 +1,27 @@
 /* Copyright © 1988-2020 by Abbott Analytical Products. All Rights Reserved.
  * Melted s010 and s015 into joystick/potentiometer controller
  * for the a038 critterChaser
+ * 201222_tr Road Tested gamepad-otg-android.  The Stop and button seemed
+ *           to work well.  The joystick still seemed a bit sluggish.
+ *           The Compass worked well when hooked to the Wifi via udp.
+ * 201221_tr Runs great with the SLOT2 note.  need to wire wrap of Dupont cable
+ *           the switch to RJ24 adapter.
+ *           Adjusted js and btn read delays.
+ * 201220_tr Reset Orion RJ25 connections
+ *           joystick      => RJ25 8
+ *           potentiometer => RJ25 6
+ *           button        => RJ25 3
+ * 201017_tr Need to slow down the number of messages being sent to the
+ *           Android for processing.  The msg are overwhelming the
+ *           Making the message JS readings too long causes junk on the
+ *           vehicle because of message collision.  Return to single 800
+ *           delay.
+ *           vehicle processing.
+ * 201015_tr Experiment with slowing down the Serial messaging loop.
+ *           No real difference in behavior at the vehicle end was observed.
+ *           Reverted to the 800 value.  Best scrolling of Serial Monitor
+ *           and Android Gamepad mode.
+ *           Remove extraneous development comments
  * 200925_tr Testing showed a need to implement some type of GUI to
  *           warn that 0_0_0_@ is a valid functioning condition that needs to be
  *           handled in a038 and maybe here as well.
@@ -37,9 +58,16 @@
 #include "MeOrion.h"
 
 MeJoystick joystick1(PORT_8);
-MePotentiometer zPotentiometer(PORT_7);
+MePotentiometer zPotentiometer(PORT_7);     // was 7
 //MeJoystick joystick2(PORT_6);
-MePort input(PORT_6); // works well on 6 but not 5
+
+//NOTE: 201221_tr slot2
+//Using slot2 jumper
+//yellow to s2
+//black  to GND
+MeLimitSwitch btn_input(PORT_6,SLOT2);   //(uint8_t port, uint8_t slot);
+//MePort btn_input(PORT_6);
+//MePort btn_input(PORT_3); // was 6 works well on 6 but not 5
                       // Setup two buttons per port
 
 //s015
@@ -53,9 +81,17 @@ int btnVal = 64;  //@
 String packageVal;
 MeSerial mSerial;   //maps to default PORT D
                     //See MeSerial.h  of makeblock library. It appears to
-                    // lay well with the UNO.
-
-
+                    //play well with the UNO.
+int const delay_rd_btn = 10;
+int const delay4js_moves = 800;//1800; //1600; // 800;
+//201214
+// 1600 => 3 ticks
+// 1800 => 7 ticks
+// 2400 => 9 ticks
+//201017 replaced 800;
+// discarded 1600 which causes message collision on the vehicle.
+//tried		7500;500;//250; //100; //800; //10000; //800;
+//good 900; 750; 800;
 
 //s010
 // Any pin that supports PWM can also be used:
@@ -63,8 +99,7 @@ MeSerial mSerial;   //maps to default PORT D
 int haltflg  =0;     //3<: fires no msg in RX Serial unavailable
 int waitflg  =0;     //= 0: fires msg from loop
 int stopper  = 3;
-int loopknt = 0;
-//int cycleBtn = 0;
+int loopknt  = 0;
 
 unsigned char inByte=0, outByte=48;
 unsigned char testByte = 0;
@@ -75,20 +110,39 @@ void setup()
 {
   /* initialize serial communications at 9600 bps */
   mSerial.begin(9600);
-  //Serial.begin(9600);
 }
 
 
-int ReadRJ25_Port_6()
+int ReadRJ25_btn()
 {
-	int val1, val2;
+    bool ack_btnRd = false;  //proceed after review of calibration
+    int waitkntr	= 0;
+    int maxwait = 2;
+	bool val1 = false; //, val2;
 	int rsvp = 0;
-	val1 = input.dRead1();   /* read SLOT1 level */
-	val2 = input.dRead2();    /* read SLOT2 level */
-	if (val1 == HIGH)
-		{rsvp = val1;}
-	else if (val2 == HIGH)
-	     {rsvp = val2;}
+  /* read SLOT1 level */
+	while (!ack_btnRd)
+	{
+  		val1 = btn_input.touched();   // for MePort  dRead1();
+  	    if (val1 == true)
+  	    {
+  	    	 rsvp = 1;    //A button pressed
+  	    	 ack_btnRd = true;
+  	    	 break;
+  	    }
+  	    else
+  	    {
+  		//delay(delay_rd_btn);
+		waitkntr++;
+		if (waitkntr >= maxwait)
+		{
+			rsvp = 0;
+			break;  // wfrom while
+		}
+  	    } // end else
+  //	    val1 = false;
+	} //while
+//	delay(delay_rd_btn);
 	 return rsvp;
 }
 
@@ -96,24 +150,25 @@ void Check4Button()
 {   //add command buttons
 	//Assume btnA pressed
 	//Only one button press per serial print
-//    cycleBtn;
-	int btnPressed = ReadRJ25_Port_6(); // = random(0,6);  //cycleBtn;
-//	cycleBtn++;
-
+//	int btnPressed = ReadRJ25_Port_6(); // = random(0,6);  //cycleBtn;
+	int btnPressed = ReadRJ25_btn(); // = random(0,6);  //cycleBtn;
+//	Serial.print(btnPressed);
+//	Serial.println(" ::... button pressed  Check4Button()");
 	switch (btnPressed)
 	{
-	case(1):
+	case 1:
 	btnVal = 65;   //A
 	break;
-	case(2):
+	case 2:
 	btnVal = 66;   //B
 	break;
-	case(3):
+	case 3:
 	btnVal = 88;   //X
 	break;
-	case(4):
+	case 4:
 	btnVal = 89;  //Y
 	break;
+	case 0:
 	default: // no buttons pressed
 	btnVal = 64;    //@
 	break;
@@ -131,38 +186,21 @@ void Check4Joystick()
 	  jsy = joystick1.readY();
 	  angle = joystick1.angle();
 	  OffCenter = joystick1.OffCenter();
-	  speed = zPotentiometer.read();
-//      packageVal = x;
-//     packageVal = packageVal  + "_" + y;
-//     packageVal = packageVal + "_" + angle;
-//     packageVal = packageVal + "_" + OffCenter;
-//      packageVal = packageVal + "_" + speed;
+//redundant	  speed = zPotentiometer.read();
 	  }
-	  delay(800);
+//just use the Check4Serial Event	  delay(delay4js_moves);
 }
 
 
 
 void Check4serialEvent()
 {
- //  mSerial.println("Open serial event");
-//   if (Serial.available() > 0)
    {
-//	        mSerial.printf("%s \r\n","Open serial event");
-	        //Serial.println("Open serial event");
             Check4Joystick();
 			Check4Button();
- 	        //
-//			mSerial.printf("%s \r\n",packageVal);
-//			char * cstr;
-//			cstr = (char)*packageVal[0];
-			//mSerial.sendString(cstr);
-			//mSerial.printf(cstr);
-//			  mSerial.printf("%s\r\n","just for test");
-//			  mSerial.printf("%d,0x%x \r\n",123,0x123);
-			  mSerial.printf("%d_%d_%d_%c \r\n",jsx, jsy,speed,btnVal);
-
-			  delay(100);
+			mSerial.printf("%d_%d_%d_%c \r\n",jsx, jsy,speed,btnVal);
+     		delay(delay4js_moves);  // was 100
+     		btnVal = 64;
 
  	}
 }
@@ -172,13 +210,10 @@ void loop()
 {
 	if (waitflg < stopper)
 	{
-//	  mSerial.printf("%s \r\n","looping");
-	  //Serial.println("looping");
       packageVal = "";
       Check4serialEvent();
 	}
     if (mSerial.available() > 0)
-    //if (Serial.available() > 0)
     {
 	        haltflg = 0;
     }
