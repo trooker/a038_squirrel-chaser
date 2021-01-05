@@ -1,4 +1,4 @@
-This dicrectory contains a spike that was used to generate an early proof 
+This directory contains a spike that was used to generate an early proof 
 of concept regarding WIFI communication via UDP.
 
 The a038_rc_wifi_991.aia and its associated extension UrsAI2UDPv3.aix
